@@ -13,8 +13,9 @@ function start() {
   setMaxExecutionTime();
   setArchivingInterval();
 
-  // Create or update the fallback trigger based on the max execution time (fallback if script is exeeding Google Script limits)
-  createTrigger("startFallback", onStart.maxExecutionTime);
+  // Create the fallback trigger
+  // based on the max execution time (fallback if script is exeeding Google Script limits)
+  createTrigger("startFallback", onStart.maxExecutionTime + 1);
 
   // Remove any stop note from previous stop() call
   PropertiesService.getUserProperties().deleteProperty("stopNote");
@@ -35,15 +36,8 @@ function start() {
   }
 
   // Create a trigger based on the archiving interval
-  // or after one minute after maximum execution time was reached
-  let interval = onStart.archivingInterval;
-  if (PropertiesService.getUserProperties().getProperty("timeout") !== null) {
-    interval = 1;
-    PropertiesService.getUserProperties().deleteProperty("timeout");
-  }
-  createTrigger("start", interval);
+  createTrigger("start", onStart.archivingInterval);
 
-  // Update the fallback trigger
-  // archiving interval + 1 minute to allow fallback trigger update on the next regular script run
-  createTrigger("startFallback", onStart.archivingInterval + 1);
+  // Delete the fallback trigger
+  deleteTrigger("startFallback");
 }

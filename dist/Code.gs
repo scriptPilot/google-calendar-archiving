@@ -16,8 +16,9 @@ function start() {
   setMaxExecutionTime();
   setArchivingInterval();
 
-  // Create or update the fallback trigger based on the max execution time (fallback if script is exeeding Google Script limits)
-  createTrigger("startFallback", onStart.maxExecutionTime);
+  // Create the fallback trigger
+  // based on the max execution time (fallback if script is exeeding Google Script limits)
+  createTrigger("startFallback", onStart.maxExecutionTime + 1);
 
   // Remove any stop note from previous stop() call
   PropertiesService.getUserProperties().deleteProperty("stopNote");
@@ -38,17 +39,10 @@ function start() {
   }
 
   // Create a trigger based on the archiving interval
-  // or after one minute after maximum execution time was reached
-  let interval = onStart.archivingInterval;
-  if (PropertiesService.getUserProperties().getProperty("timeout") !== null) {
-    interval = 1;
-    PropertiesService.getUserProperties().deleteProperty("timeout");
-  }
-  createTrigger("start", interval);
+  createTrigger("start", onStart.archivingInterval);
 
-  // Update the fallback trigger
-  // archiving interval + 1 minute to allow fallback trigger update on the next regular script run
-  createTrigger("startFallback", onStart.archivingInterval + 1);
+  // Delete the fallback trigger
+  deleteTrigger("startFallback");
 }
 
 function stop() {
@@ -128,9 +122,8 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
       Date.now() - archivingStarted >
       onStart.maxExecutionTime * 60 * 1000 - 15 * 1000 // some seconds buffer
     ) {
-      PropertiesService.getUserProperties().setProperty("timeout", true);
       Logger.log(
-        "Max. execution time reached. The script will be restarted shortly.",
+        "Maximum execution time reached. The archiving will continue on the next run.",
       );
       break;
     }
@@ -230,18 +223,7 @@ function setMaxExecutionTime(minutes = 6) {
 
 function createTrigger(functionName, minutes) {
   if (functionName === "startFallback") {
-    // Ceil to next valid interval (1, 5, 10, 15 or 30)
-    minutes =
-      minutes >= 30
-        ? minutes
-        : minutes > 15
-          ? 30
-          : minutes > 10
-            ? 15
-            : minutes > 5
-              ? 10
-              : 5;
-
+    minutes = getTriggerMinutes(minutes);
     let newTrigger = null;
     if (minutes <= 30) {
       newTrigger = ScriptApp.newTrigger(functionName)
@@ -336,6 +318,21 @@ function getEvents({ calendarId, dateMin, dateMax, sourceCalendarId }) {
 
   // Return the events array
   return events;
+}
+
+function getTriggerMinutes(minutes) {
+  // Ceil to next valid interval (1, 5, 10, 15 or 30)
+  minutes =
+    minutes >= 30
+      ? minutes
+      : minutes > 15
+        ? 30
+        : minutes > 10
+          ? 15
+          : minutes > 5
+            ? 10
+            : 5;
+  return minutes;
 }
 
 // Dedicated function to be called by a fallback trigger
