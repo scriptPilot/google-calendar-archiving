@@ -44,7 +44,7 @@ function start() {
     interval = 1;
     PropertiesService.getUserProperties().deleteProperty("timeout");
   }
-  createTrigger("start", onStart.archivingInterval);
+  createTrigger("start", interval);
 
   // Update the fallback trigger
   // archiving interval + 1 minute to allow fallback trigger update on the next regular script run
