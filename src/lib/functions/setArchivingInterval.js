@@ -1,4 +1,4 @@
-function setArchivingInterval(minutes = 60) {
+function setArchivingInterval(minutes = 1) {
   // Check script invocation
   if (!onStart.calledByStartFunction) {
     throw new Error(

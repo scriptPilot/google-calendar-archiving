@@ -72,3 +72,7 @@ Feel free to open an [issue](https://github.com/scriptPilot/google-calendar-arch
 #### v1.2.0
 
 - Use move instead of create and delete
+
+#### v1.3.0
+
+- Archiving interval configurable

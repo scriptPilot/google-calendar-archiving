@@ -206,7 +206,7 @@ function startOfYear(offset = 0) {
   return nextDays(DateTime.now().startOf("year").plus({ years: offset }));
 }
 
-function setArchivingInterval(minutes = 60) {
+function setArchivingInterval(minutes = 1) {
   // Check script invocation
   if (!onStart.calledByStartFunction) {
     throw new Error(

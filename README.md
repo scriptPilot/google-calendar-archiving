@@ -69,6 +69,21 @@ Example - keep the events from this and last week:
 archive('Work', 'Work Archive', startOfWeek(1))
 ```
 
+### Archiving Interval
+
+The archiving interval can be specified.
+
+By default, the next archiving is triggered after `1` minute.
+
+This value can be increased, if the Google Calender API quota is an issue.
+
+```js
+function onStart() {
+  setArchivingInterval(1)
+  archive('Work', 'Work Archive')
+} 
+```
+
 ## Update
 
 To update the script version, replace the `Code.gs` file content with [this code](dist/Code.gs).
