@@ -40,7 +40,7 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
       const rrule = RRuleStr(
         `DTSTART:${eventStart.toFormat("yMMdd'T'HHmmss")}\n${event.recurrence.join("\n")}`,
       );
-      return rrule.after(dateMax) === null;
+      return rrule.after(dateMax.toJSDate()) === null;
     } else if (event.end && event.end.dateTime) {
       eventEnd = DateTime.fromISO(event.end.dateTime, {
         zone: eventStartTimeZone,
