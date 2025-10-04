@@ -1,0 +1,12 @@
+# System
+.DS_Store
+
+# CLASP
+.clasp.json
+
+# NPM
+node_modules/
+
+# onStart
+onStart.js
+onStart.gs
