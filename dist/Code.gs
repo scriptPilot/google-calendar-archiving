@@ -116,25 +116,21 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
     return eventEnd <= dateMax;
   });
   // Archive (move) events from the source to the target calendar
-  filteredSourceEvents.forEach((event) => {
+  for (const event of filteredSourceEvents) {
     // Check for max execution time (might be relevant on first run)
     if (
       Date.now() - archivingStarted >
       onStart.maxExecutionTime * 60 * 1000 - 15 * 1000 // 30 sec buffer
     ) {
-      createTrigger("start", 1);
-      Logger.log("Script will be restarted shortly");
-      throw new Error("Maximum execution time reached");
+      Logger.log(
+        "Max. execution time reached. The script will be restarted shortly.",
+      );
+      break;
     }
-
-    // Copy event, remove ID and iCAL UID
-    const targetEvent = { ...event };
-    delete targetEvent.id;
-    delete targetEvent.iCalUID;
-    // Create target event
-    Calendar.Events.insert(targetEvent, targetCalendar.id);
-    // Remove source event
-    Calendar.Events.remove(sourceCalendar.id, event.id);
+    // Move event from source to target calendar without notifying users
+    Calendar.Events.move(sourceCalendar.id, event.id, targetCalendar.id, {
+      sendUpdates: "none",
+    });
     // Log with event date
     const eventStartTimeZone = event.start.timeZone || sourceCalendar.timeZone;
     const eventStartDate = DateTime.fromISO(
@@ -147,7 +143,7 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
     Logger.log(
       `Archived event "${event.summary || "(no title)"}" from ${formattedDate}`,
     );
-  });
+  }
 
   // Log completion
   Logger.log(

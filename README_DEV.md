@@ -68,3 +68,7 @@ Feel free to open an [issue](https://github.com/scriptPilot/google-calendar-arch
 #### v1.1.0
 
 - Restart on max. execution time
+
+#### v1.2.0
+
+- Use move instead of create and delete
