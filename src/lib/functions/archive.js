@@ -60,7 +60,7 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
     // Check for max execution time (might be relevant on first run)
     if (
       Date.now() - archivingStarted >
-      onStart.maxExecutionTime * 60 * 1000 - 15 * 1000 // 30 sec buffer
+      onStart.maxExecutionTime * 60 * 1000 - 15 * 1000 // some seconds buffer
     ) {
       Logger.log(
         "Max. execution time reached. The script will be restarted shortly.",
