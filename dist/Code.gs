@@ -110,7 +110,6 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
     } else {
       return false;
     }
-    if (!(eventEnd <= dateMax)) console.log("exclude false", eventEnd, event);
     return eventEnd <= dateMax;
   });
   // Archive (move) events from the source to the target calendar

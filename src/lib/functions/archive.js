@@ -1,4 +1,7 @@
 function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
+  // Start date
+  const archivingStarted = Date.now();
+
   // Check script invocation
   if (!onStart.calledByStartFunction) {
     throw new Error(
@@ -50,11 +53,20 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
     } else {
       return false;
     }
-    if (!(eventEnd <= dateMax)) console.log("exclude false", eventEnd, event);
     return eventEnd <= dateMax;
   });
   // Archive (move) events from the source to the target calendar
   filteredSourceEvents.forEach((event) => {
+    // Check for max execution time (might be relevant on first run)
+    if (
+      Date.now() - archivingStarted >
+      onStart.maxExecutionTime * 60 * 1000 - 15 * 1000 // 30 sec buffer
+    ) {
+      createTrigger("start", 1);
+      Logger.log("Script will be restarted shortly");
+      throw new Error("Maximum execution time reached");
+    }
+
     // Copy event, remove ID and iCAL UID
     const targetEvent = { ...event };
     delete targetEvent.id;
