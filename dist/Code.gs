@@ -134,10 +134,14 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
       );
       break;
     }
-    // Move event from source to target calendar without notifying users
-    Calendar.Events.move(sourceCalendar.id, event.id, targetCalendar.id, {
-      sendUpdates: "none",
-    });
+    // Copy event, remove ID and iCAL UID
+    const targetEvent = { ...event };
+    delete targetEvent.id;
+    delete targetEvent.iCalUID;
+    // Create target event
+    Calendar.Events.insert(targetEvent, targetCalendar.id);
+    // Remove source event
+    Calendar.Events.remove(sourceCalendar.id, event.id);
     // Log with event date
     const eventStartTimeZone = event.start.timeZone || sourceCalendar.timeZone;
     const eventStartDate = DateTime.fromISO(
