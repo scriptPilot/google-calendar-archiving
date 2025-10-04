@@ -35,6 +35,12 @@ function start() {
   }
 
   // Create a trigger based on the archiving interval
+  // or after one minute after maximum execution time was reached
+  let interval = onStart.archivingInterval;
+  if (PropertiesService.getUserProperties().getProperty("timeout") !== null) {
+    interval = 1;
+    PropertiesService.getUserProperties().deleteProperty("timeout");
+  }
   createTrigger("start", onStart.archivingInterval);
 
   // Update the fallback trigger

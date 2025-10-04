@@ -38,6 +38,12 @@ function start() {
   }
 
   // Create a trigger based on the archiving interval
+  // or after one minute after maximum execution time was reached
+  let interval = onStart.archivingInterval;
+  if (PropertiesService.getUserProperties().getProperty("timeout") !== null) {
+    interval = 1;
+    PropertiesService.getUserProperties().deleteProperty("timeout");
+  }
   createTrigger("start", onStart.archivingInterval);
 
   // Update the fallback trigger
@@ -122,6 +128,7 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
       Date.now() - archivingStarted >
       onStart.maxExecutionTime * 60 * 1000 - 15 * 1000 // some seconds buffer
     ) {
+      PropertiesService.getUserProperties().setProperty("timeout", true);
       Logger.log(
         "Max. execution time reached. The script will be restarted shortly.",
       );

@@ -62,6 +62,7 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
       Date.now() - archivingStarted >
       onStart.maxExecutionTime * 60 * 1000 - 15 * 1000 // some seconds buffer
     ) {
+      PropertiesService.getUserProperties().setProperty("timeout", true);
       Logger.log(
         "Max. execution time reached. The script will be restarted shortly.",
       );
