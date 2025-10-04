@@ -64,3 +64,7 @@ Feel free to open an [issue](https://github.com/scriptPilot/google-calendar-arch
 ### v1
 
 - Initial release
+
+#### v1.1.0
+
+- Restart on max. execution time
