@@ -25,8 +25,6 @@ The following examples are based on assumed calendars `Work` and `Work Archive`.
 
 2. Select file `Code.gs`, run the function `start()` and grant the requested rights.
 
-   Now, a nightly trigger is created to archive past events automatically.
-
 3. To stop the archiving, select file `Code.gs` and run `stop()`.
 
 ### Multiple Calendars
