@@ -1,7 +1,13 @@
 // Returns array with events resources
 // https://developers.google.com/calendar/api/v3/reference/events#resource
 
-function getEvents({ calendarId, dateMin, dateMax, sourceCalendarId }) {
+function getEvents({
+  calendarId,
+  dateMin,
+  dateMax,
+  sourceCalendarId,
+  singleEvents = false,
+}) {
   // Check the input
   if (!calendarId) throw new Error("calendarId is missing");
 
@@ -13,6 +19,7 @@ function getEvents({ calendarId, dateMin, dateMax, sourceCalendarId }) {
     ...(sourceCalendarId
       ? { privateExtendedProperty: `sourceCalendarId=${sourceCalendarId}` }
       : {}),
+    singleEvents,
   };
 
   // Retrieve all events with pagination

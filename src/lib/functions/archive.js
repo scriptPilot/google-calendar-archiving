@@ -30,21 +30,20 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
     calendarId: sourceCalendar.id,
     dateMin: null,
     dateMax,
+    singleEvents: true,
   });
 
-  // Filter source events for those which end before the max date
+  // Exclude irrelevant source events
   const filteredSourceEvents = sourceEvents.filter((event) => {
+    // Exclude deleted events
+    if (event.status === "cancelled") return false;
+    // Exclude birthdays
+    if (event.eventType === "birthday") return false;
+    // Exclude events which are already in the archive calendar
+    if (event.organizer?.email === targetCalendar.id) return false;
+    // Exclude events which are within the keep period
     const eventStartTimeZone = event.start.timeZone || targetCalendar.timeZone;
-    if (event.recurrence) {
-      const eventStart = DateTime.fromISO(
-        event.start.dateTime || event.start.date,
-        { zone: eventStartTimeZone },
-      );
-      const rrule = RRuleStr(
-        `DTSTART:${eventStart.toFormat("yMMdd'T'HHmmss")}\n${event.recurrence.join("\n")}`,
-      );
-      return rrule.after(dateMax.toJSDate()) === null;
-    } else if (event.end && event.end.dateTime) {
+    if (event.end && event.end.dateTime) {
       eventEnd = DateTime.fromISO(event.end.dateTime, {
         zone: eventStartTimeZone,
       });
@@ -55,7 +54,9 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
     }
     return eventEnd <= dateMax;
   });
-  // Archive (move) events from the source to the target calendar
+  // Archive events from the source to the target calendar
+  let archivedEventsCount = 0;
+  let skippedEventsCount = 0;
   for (const event of filteredSourceEvents) {
     // Check for max execution time (might be relevant on first run)
     if (
@@ -67,15 +68,7 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
       );
       break;
     }
-    // Copy event, remove ID and iCAL UID
-    const targetEvent = { ...event };
-    delete targetEvent.id;
-    delete targetEvent.iCalUID;
-    // Create target event
-    Calendar.Events.insert(targetEvent, targetCalendar.id);
-    // Remove source event
-    Calendar.Events.remove(sourceCalendar.id, event.id);
-    // Log with event date
+    // Create formatted date of the event for logging purpose
     const eventStartTimeZone = event.start.timeZone || sourceCalendar.timeZone;
     const eventStartDate = DateTime.fromISO(
       event.start.dateTime || event.start.date,
@@ -84,6 +77,52 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
     const formattedDate = eventStartDate.toFormat(
       event.start.dateTime ? "dd.M.yyyy HH:mm" : "dd.M.yyyy",
     );
+
+    // Create and cleanup event copy
+    const eventCopy = { ...event };
+    delete eventCopy.id;
+    delete eventCopy.iCalUID;
+    delete eventCopy.recurringEventId;
+    if (eventCopy.attendees)
+      eventCopy.attendees = eventCopy.attendees.filter((a) => !a.self);
+
+    // Create target event
+    let targetEvent;
+    try {
+      targetEvent = Calendar.Events.insert(eventCopy, targetCalendar.id);
+    } catch (err) {
+      const reason = err.details?.errors?.[0]?.reason;
+      if (reason === "rateLimitExceeded" || reason === "quotaExceeded") {
+        Logger.log(
+          `Google Calendar API rate limit reached. The archiving will continue on the next run.`,
+        );
+        break;
+      }
+      Logger.log(
+        `Failed to create target event "${event.summary || "(no title)"}" from ${formattedDate}`,
+      );
+      skippedEventsCount++;
+      continue;
+    }
+
+    // Remove source event
+    try {
+      Calendar.Events.remove(sourceCalendar.id, event.id);
+    } catch (err) {
+      if (err.details?.errors?.[0]?.reason !== "deleted") {
+        Logger.log(
+          `Failed to remove source event "${event.summary || "(no title)"}" from ${formattedDate}`,
+        );
+        try {
+          Calendar.Events.remove(targetCalendar.id, targetEvent.id);
+        } catch {}
+        skippedEventsCount++;
+        continue;
+      }
+    }
+
+    // Log archiving
+    archivedEventsCount++;
     Logger.log(
       `Archived event "${event.summary || "(no title)"}" from ${formattedDate}`,
     );
@@ -91,7 +130,10 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
 
   // Log completion
   Logger.log(
-    `${filteredSourceEvents.length} event${filteredSourceEvents.length !== 1 ? "s" : ""} archived`,
+    `${archivedEventsCount} event${archivedEventsCount !== 1 ? "s" : ""} archived`,
+  );
+  Logger.log(
+    `${skippedEventsCount} event${skippedEventsCount !== 1 ? "s" : ""} skipped`,
   );
   Logger.log("Archiving completed");
 }
