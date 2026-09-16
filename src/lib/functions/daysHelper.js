@@ -38,5 +38,5 @@ function startOfHalfyear(offset = 0) {
 }
 
 function startOfYear(offset = 0) {
-  return nextDays(DateTime.now().startOf("year").plus({ years: offset }));
+  return pastDays(DateTime.now().startOf("year").plus({ years: offset }));
 }

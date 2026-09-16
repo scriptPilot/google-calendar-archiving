@@ -1,4 +1,4 @@
-// Google Calendar Archiving, build on 2025-10-05
+// Google Calendar Archiving, build on 2026-09-16
 // Source: https://github.com/scriptPilot/google-calendar-archiving
 
 function start() {
@@ -145,6 +145,55 @@ function archive(sourceCalendarName, targetCalendarName, keepPastDays = 0) {
     delete eventCopy.recurringEventId;
     if (eventCopy.attendees)
       eventCopy.attendees = eventCopy.attendees.filter((a) => !a.self);
+    eventCopy.extendedProperties = {
+      ...eventCopy.extendedProperties,
+      private: {
+        ...eventCopy.extendedProperties?.private,
+        archivedFromEventId: event.id,
+      },
+    };
+
+    let alreadyArchived = false;
+    try {
+      const existingTargetEvents = Calendar.Events.list(targetCalendar.id, {
+        privateExtendedFilter: `archivedFromEventId:${event.id}`,
+        maxResults: 1,
+      });
+      alreadyArchived = Boolean(
+        existingTargetEvents.items && existingTargetEvents.items.length > 0,
+      );
+    } catch (err) {
+      const reason = err.details?.errors?.[0]?.reason;
+      if (reason === "rateLimitExceeded" || reason === "quotaExceeded") {
+        Logger.log(
+          `Google Calendar API rate limit reached. The archiving will continue on the next run.`,
+        );
+        break;
+      }
+      Logger.log(
+        `Failed to check archive for event "${event.summary || "(no title)"}" from ${formattedDate}`,
+      );
+      skippedEventsCount++;
+      continue;
+    }
+    if (alreadyArchived) {
+      try {
+        Calendar.Events.remove(sourceCalendar.id, event.id);
+      } catch (err) {
+        if (err.details?.errors?.[0]?.reason !== "deleted") {
+          Logger.log(
+            `Failed to remove source event "${event.summary || "(no title)"}" from ${formattedDate}`,
+          );
+          skippedEventsCount++;
+          continue;
+        }
+      }
+      Logger.log(
+        `Event "${event.summary || "(no title)"}" from ${formattedDate} was already archived`,
+      );
+      archivedEventsCount++;
+      continue;
+    }
 
     // Create target event
     let targetEvent;
@@ -238,7 +287,7 @@ function startOfHalfyear(offset = 0) {
 }
 
 function startOfYear(offset = 0) {
-  return nextDays(DateTime.now().startOf("year").plus({ years: offset }));
+  return pastDays(DateTime.now().startOf("year").plus({ years: offset }));
 }
 
 function setArchivingInterval(minutes = 1) {
